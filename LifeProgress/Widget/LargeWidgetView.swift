@@ -60,24 +60,23 @@ struct LargeWidgetView: View {
     // MARK: - Grid View
 
     private var gridView: some View {
-        // 显示过去和未来各一年，共730天
-        let daysToShow = 730
-        let totalWeeks = (daysToShow + 6) / 7
+        // 显示最近一年半：前270天到后270天（共540天，约77周）
+        // 移除ScrollView以兼容iOS 16，格子会自适应大小
+        let daysToShow = 540
+        let totalWeeks = min((daysToShow + 6) / 7, 30) // 最多显示30周，防止溢出
 
         return GeometryReader { geometry in
             let availableWidth = geometry.size.width
             let totalSpacing = CGFloat(columns - 1) * spacing
             let calculatedCellSize = min(cellSize, (availableWidth - totalSpacing) / CGFloat(columns))
 
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: spacing) {
-                    ForEach(0..<totalWeeks, id: \.self) { week in
-                        HStack(spacing: spacing) {
-                            ForEach(0..<columns, id: \.self) { day in
-                                let dayIndex = week * columns + day
-                                if dayIndex < daysToShow {
-                                    gridCell(for: dayIndex, size: calculatedCellSize)
-                                }
+            VStack(spacing: spacing) {
+                ForEach(0..<totalWeeks, id: \.self) { week in
+                    HStack(spacing: spacing) {
+                        ForEach(0..<columns, id: \.self) { day in
+                            let dayIndex = week * columns + day
+                            if dayIndex < (totalWeeks * columns) {
+                                gridCell(for: dayIndex, size: calculatedCellSize)
                             }
                         }
                     }
@@ -124,11 +123,12 @@ struct LargeWidgetView: View {
 
     /// 单个格子
     private func gridCell(for dayIndex: Int, size: CGFloat) -> some View {
-        // 计算从今天往前/后的天数
-        // 显示 [今天-365, 今天+365]
-        let daysFromToday = dayIndex - 365
+        // 显示最近一年半：从今天往前105天到往后105天（共30周=210天）
+        let totalDaysToShow = 210
+        let centerIndex = totalDaysToShow / 2
+        let daysFromToday = dayIndex - centerIndex
         let actualDay = entry.widgetData.passedDays + daysFromToday
-        let isPassed = actualDay >= 0 && actualDay < entry.widgetData.passedDays
+        let isPassed = actualDay >= 0 && actualDay <= entry.widgetData.passedDays
         let isToday = daysFromToday == 0
 
         return Rectangle()
@@ -138,7 +138,7 @@ struct LargeWidgetView: View {
             .overlay(
                 // 今天的标记
                 isToday ? Circle()
-                    .stroke(Color.red, lineWidth: 1)
+                    .stroke(Color.red, lineWidth: 1.5)
                     .scaleEffect(1.3)
                 : nil
             )
