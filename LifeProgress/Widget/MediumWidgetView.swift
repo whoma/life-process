@@ -79,14 +79,23 @@ struct MediumWidgetView: View {
 
     /// 单个格子
     private func gridCell(for dayIndex: Int, size: CGFloat) -> some View {
-        // 计算从出生开始的实际天数
-        let actualDay = entry.widgetData.passedDays - (365 - dayIndex)
-        let isPassed = actualDay >= 0 && actualDay < entry.widgetData.passedDays
+        // 显示最近一年：从今天往前180天到往后185天（共365天）
+        let daysFromToday = dayIndex - 180
+        let actualDay = entry.widgetData.passedDays + daysFromToday
+        let isPassed = actualDay >= 0 && actualDay <= entry.widgetData.passedDays
+        let isToday = daysFromToday == 0
 
         return Rectangle()
             .fill(isPassed ? entry.widgetData.theme.passedSwiftUIColor : entry.widgetData.theme.futureSwiftUIColor)
             .frame(width: size, height: size)
             .cornerRadius(1)
+            .overlay(
+                // 今天的标记（小圆点）
+                isToday ? Circle()
+                    .fill(Color.red)
+                    .frame(width: size * 0.5, height: size * 0.5)
+                : nil
+            )
     }
 
     /// 图例项
